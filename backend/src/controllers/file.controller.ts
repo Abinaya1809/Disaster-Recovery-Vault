@@ -312,7 +312,13 @@ AWS Response: ${errName} - ${storageErr.message}`);
       if (errName === 'AccessDenied' || errName === 'Forbidden') {
         return res.status(403).json({ success: false, message: 'Access denied to S3 object.' });
       }
-      return res.status(500).json({ success: false, message: 'Unexpected server error while retrieving file.' });
+      if (errName === 'InvalidAccessKeyId' || errName === 'SignatureDoesNotMatch' || errName === 'UnrecognizedClientException') {
+        return res.status(401).json({ success: false, message: 'AWS Authentication failed. The provided AWS credentials are invalid or deleted.' });
+      }
+      if (errName === 'PermanentRedirect') {
+        return res.status(500).json({ success: false, message: 'AWS Bucket Region configuration is incorrect.' });
+      }
+      return res.status(500).json({ success: false, message: `Unexpected server error while retrieving file: ${errName}` });
     }
 
     await audit.logAction(
