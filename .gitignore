@@ -1,0 +1,12 @@
+node_modules
+.node/
+.node_temp/
+.postgres/
+.postgres_data/
+*.zip
+.env
+backend/.env
+logs/
+dist/
+build/
+*.log

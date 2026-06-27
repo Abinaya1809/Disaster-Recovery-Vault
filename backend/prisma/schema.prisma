@@ -1,0 +1,206 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum FileStatus {
+  ACTIVE
+  DELETED
+}
+
+enum BackupStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum BackupHealth {
+  HEALTHY
+  UNHEALTHY
+}
+
+enum RecoveryStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum RecoveryType {
+  FILE
+  FOLDER
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  UPLOAD
+  DOWNLOAD
+  DELETE
+  RESTORE
+  SHARE
+  ADMIN_ACTION
+}
+
+enum NotificationType {
+  BACKUP
+  RECOVERY
+  STORAGE_WARNING
+  SECURITY_ALERT
+  SHARE
+}
+
+model User {
+  id           String        @id @default(uuid())
+  employeeId   String?       @unique
+  firstName    String?
+  lastName     String?
+  email        String        @unique
+  phone        String?
+  department   String?
+  designation  String?
+  role         Role          @default(EMPLOYEE)
+  status       String        @default("ACTIVE")
+  password     String
+  storageLimit Int           @default(5120) // in Megabytes (5GB default)
+  profileImage String?
+  lastLogin    DateTime?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  folders      Folder[]
+  files        File[]
+  versions     FileVersion[]
+  auditLogs    AuditLog[]
+  sharedLinks  SharedLink[]
+  notifications Notification[]
+  recoveryRequests RecoveryRequest[]
+}
+
+model Folder {
+  id           String        @id @default(uuid())
+  name         String
+  parentId     String?
+  parent       Folder?       @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  subfolders   Folder[]      @relation("FolderHierarchy")
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  status       FileStatus    @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  files        File[]
+  recoveryRequests RecoveryRequest[]
+}
+
+model File {
+  id           String        @id @default(uuid())
+  name         String
+  originalName String
+  size         Int
+  mimeType     String
+  folderId     String?
+  folder       Folder?       @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  status       FileStatus    @default(ACTIVE)
+  deletedAt    DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  versions     FileVersion[]
+  sharedLinks  SharedLink[]
+  recoveryRequests RecoveryRequest[]
+}
+
+model FileVersion {
+  id            String        @id @default(uuid())
+  fileId        String
+  file          File          @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  size          Int
+  s3Key         String
+  s3VersionId   String?
+  createdById   String
+  createdBy     User          @relation(fields: [createdById], references: [id])
+  createdAt     DateTime      @default(now())
+  backups       Backup[]
+  recoveryRequests RecoveryRequest[]
+}
+
+model Backup {
+  id             String       @id @default(uuid())
+  fileVersionId  String
+  fileVersion    FileVersion  @relation(fields: [fileVersionId], references: [id], onDelete: Cascade)
+  status         BackupStatus @default(PENDING)
+  s3Bucket       String
+  s3Key          String
+  storageClass   String       @default("STANDARD")
+  lastBackupTime DateTime?
+  backupHealth   BackupHealth @default(HEALTHY)
+  errorMessage   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model RecoveryRequest {
+  id            String         @id @default(uuid())
+  requestedById String
+  requestedBy   User           @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+  fileId        String?
+  file          File?          @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  fileVersionId String?
+  fileVersion   FileVersion?    @relation(fields: [fileVersionId], references: [id], onDelete: SetNull)
+  folderId      String?
+  folder        Folder?        @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  status        RecoveryStatus @default(PENDING)
+  type          RecoveryType
+  restorePath   String
+  logSummary    String?
+  createdAt     DateTime       @default(now())
+  resolvedAt    DateTime?
+}
+
+model AuditLog {
+  id        String      @id @default(uuid())
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    AuditAction
+  details   String
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime    @default(now())
+}
+
+model SharedLink {
+  id            String    @id @default(uuid())
+  fileId        String
+  file          File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  token         String    @unique
+  expiresAt     DateTime?
+  passwordHash  String?
+  isReadOnly    Boolean   @default(true)
+  allowDownload Boolean   @default(true)
+  downloadCount Int       @default(0)
+  createdById   String
+  createdBy     User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
