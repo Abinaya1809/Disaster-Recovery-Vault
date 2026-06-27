@@ -44,8 +44,8 @@ export const Login: React.FC = () => {
       >
         {/* Brand Header */}
         <div className="flex flex-col items-center mb-8 gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-purple-600 flex items-center justify-center shadow-sm">
-            <ShieldAlert className="w-6 h-6 text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-purple-600 flex items-center justify-center shadow-sm overflow-hidden border border-purple-500/20">
+            <img src="/logo.png" alt="DR Vault Logo" className="w-full h-full object-cover" />
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight font-outfit text-white">DR Vault</h2>
           <p className="text-xs text-slate-400 mt-1 font-bold tracking-widest uppercase">Enterprise Document Resilience & Sync</p>

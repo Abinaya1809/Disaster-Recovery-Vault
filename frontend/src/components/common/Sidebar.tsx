@@ -37,8 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
         {/* Brand Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#e2e8f0] dark:border-[#334155] mb-4">
           <div className="flex items-center gap-2 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-              <ShieldAlert className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
+              <img src="/logo.png" alt="DR Vault Logo" className="w-full h-full object-cover" />
             </div>
             {!collapsed && (
               <div className="transition-opacity duration-150">
